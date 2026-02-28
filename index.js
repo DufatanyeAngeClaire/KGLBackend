@@ -1,49 +1,25 @@
-const express = require("express");
-const dotenv = require("dotenv");
-const connectDB = require("./config/db");
-const userRoutes = require("./routes/userRoutes");
-const procurementRoutes = require("./routes/procurementRoutes");
-const swaggerUi = require("swagger-ui-express");
-const swaggerJsdoc = require("swagger-jsdoc");
+require('dotenv').config();
+const express = require('express');
+const mongoose = require('mongoose');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./swagger');
 
-dotenv.config();
-connectDB();
+const procurementRoutes = require('./routes/procurementRoutes');
+const salesRoutes = require('./routes/salesRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 app.use(express.json());
 
-// Swagger setup
-const swaggerOptions = {
-  definition: {
-    openapi: "3.0.0",
-    info: {
-      title: "Karibu Groceries API",
-      version: "1.0.0",
-      description: "API documentation for Karibu Groceries system",
-    },
-  },
-  apis: ["./routes/*.js"],
-};
+mongoose.connect(process.env.DATABASE_URI)
+  .then(() => console.log('MongoDB Connected'))
+  .catch(err => console.error(err));
 
-const swaggerSpec = swaggerJsdoc(swaggerOptions);
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+app.use('/procurement', procurementRoutes);
+app.use('/sales', salesRoutes);
+app.use('/users', userRoutes);
 
-// Routes
-app.use("/users", userRoutes);
-app.use("/procurement", procurementRoutes);
-
-// Root route
-app.get("/", (req, res) => {
-  res.send("Karibu Groceries API is running...");
-});
-
-// Global error handler
-app.use((err, req, res, next) => {
-  console.error(err.stack);
-  res.status(500).json({ message: err.message });
-});
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
